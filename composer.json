@@ -1,0 +1,12 @@
+{
+    "name": "ruckuus/youploy",
+    "type": "system",
+    "description": "YouPloy",
+    "require": {
+      "phpseclib/phpseclib": "dev-php5"
+    },
+    "autoload": {
+        "psr-0": {"YouPloy": "lib"}
+    },
+    "minimum-stability": "dev"
+}

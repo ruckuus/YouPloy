@@ -8,19 +8,19 @@ class Worker {
       throw new WorkerException("session id is empty");
     }
 
-    if (empty($session['priority'])) {
-      throw new WorkerException("priority is empty");
-    }
-
-    if (empty($session['server'])) {
-      throw new WorkerException("server is empty");
+    if (empty($session['servers'])) {
+      throw new WorkerException("servers are empty");
     } else {
       // Check connectivity, yes do it here!
-      getaddress_by_hostname($session['server']); 
+      foreach($session['servers'] as $s) {
+        if (!Helper::connectionTest($s)) {
+          throw new WorkerException("Server ${s} is not reachable\n");
+        }
+      }
     }
 
-    if (empty($session['responsibilities'])) {
-      throw new WorkerException("responsibilities field empty");
+    if (empty($session['apps'])) {
+      throw new WorkerException("apps field empty");
     }
 
     $this->processHost($session);
@@ -28,19 +28,24 @@ class Worker {
   }
 
   protected function processHost($session) {
-    // take server out of rotation
-    // ssh to $session['server'];
-    if (YouPloy\Helper::takeServerOutOfRotationCommand($session)) {
-      throw new WorkerException("Failed to take %s out of rotation.", $session['server']);
+    /* Process deployment on each server */
+    foreach($session['servers'] as $server) {
+      echo "Connecting to ${server} \n";
+      // Create new SSH Connection
+      try {
+        //$conn = new Connection($server);
+      } catch (Exception $e) {
+        //Graceful::Stop();
+      }
+
+      foreach($session['apps'] as $id => $app) {
+        echo "Deploying #${id} ". $app['name'] . "#" . $app['revision'] . " @ ${server} \n";
+        // Now you're on your own
+        // Send deploy command via SSH connection $conn
+        //$deploy = new YouPloy($conn);
+        //$deploy->doDeploy($app, $revision);
+      }
     }
 
-    if (YouPloy\Helper::doDeployArtefactCommand($session))) {
-      throw new WorkerException("Failed to deploy artefact to %s.", $session['server']);
-    }
-
-    if (YouPloy\Helper::getFeedbackCommand($session)) {
-      throw new WorkerException("Failed to get satisfying feedback for %s.", $session['server']);
-    }
-    
   }
 }
