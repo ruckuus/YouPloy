@@ -10,13 +10,6 @@ class Worker {
 
     if (empty($session['servers'])) {
       throw new WorkerException("servers are empty");
-    } else {
-      // Check connectivity, yes do it here!
-      foreach($session['servers'] as $s) {
-        if (!Helper::connectionTest($s)) {
-          throw new WorkerException("Server ${s} is not reachable\n");
-        }
-      }
     }
 
     if (empty($session['apps'])) {
@@ -28,24 +21,30 @@ class Worker {
   }
 
   protected function processHost($session) {
+    /* Check lock */
+    if (!empty($session['lock']))
+      throw new WorkerException("Session is locked");
+
     /* Process deployment on each server */
     foreach($session['servers'] as $server) {
       echo "Connecting to ${server} \n";
       // Create new SSH Connection
       try {
-        //$conn = new Connection($server);
+        $conn = new Connection($server);
       } catch (Exception $e) {
-        //Graceful::Stop();
+        die($e->getMessages());
       }
 
       foreach($session['apps'] as $id => $app) {
         echo "Deploying #${id} ". $app['name'] . "#" . $app['revision'] . " @ ${server} \n";
+          break;
         // Now you're on your own
         // Send deploy command via SSH connection $conn
         //$deploy = new YouPloy($conn);
         //$deploy->doDeploy($app, $revision);
       }
     }
-
   }
+
+  protected function gracefulStop() {}
 }

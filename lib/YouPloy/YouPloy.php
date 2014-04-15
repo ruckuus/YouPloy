@@ -10,21 +10,23 @@ class YouPloy {
   protected $lock;
   protected $prodLoadBalancer;
   protected $testLoadBalancer;
+  protected $conn;
 
-  public function __construct(array $opts = array()) {
-    $this->genSessionKey();
+  /**
+   * YouPloy Object
+   *
+   * @param YouPloy\Connection $conn
+   */
+  public function __construct($conn) {
+    $this->conn = $conn;
   }
 
-  public function doDeploy($object) {
-    if (empty($object))
-      throw new \Exception('Object is empty!');
+  public function doDeploy($app, $revision) {
+    if (empty($app))
+      throw new \Exception("Application name should not be empty!");
 
-    if (empty($target))
-      throw new \Exception('Target is empty!');  
-
-    if (!instanceof('YouPloy\Ploy')) {
-      throw new \Exception('Object must be an instance of Ploy');
-    }
+    if (empty($revision))
+      throw new \Exception("Revision should not be empty");
 
     if ($this->lock == true) {
       throw new \Exception("Locked to this session: %s \n", $this->sessionId);
