@@ -12,6 +12,7 @@ class Connection{
   protected $privkey = '/home/vagrant/.ssh/id_rsa';
   protected $passphrase;
   protected $connection;
+  protected $lastError;
 
   /**
    * Create SSH Connection
@@ -53,11 +54,17 @@ class Connection{
     $key->loadKey(file_get_contents($this->privkey));
 
     if (!$this->connection->login($this->username, $key)) {
-      throw new \Exception("Unable to connect!");
+      $this->lastError = $this->connection->getErrors();
+      throw new \Exception("Unable to connect to: $host !");
     }
   }
 
   public function cmd($command) {
-    return $this->connection->exec($command);
+    $this->connection->exec($command);
+    return (0 === $this->connection->getExitStatus());
+  }
+
+  public function error() {
+    return $this->lastError;
   }
 }

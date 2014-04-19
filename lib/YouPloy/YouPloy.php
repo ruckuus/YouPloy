@@ -10,7 +10,10 @@ class YouPloy {
   protected $lock;
   protected $prodLoadBalancer;
   protected $testLoadBalancer;
-  protected $conn;
+  protected $server;
+  protected $prepared;
+  protected $deployed;
+  protected $feedback;
 
   /**
    * YouPloy Object
@@ -18,7 +21,7 @@ class YouPloy {
    * @param YouPloy\Connection $conn
    */
   public function __construct($conn) {
-    $this->conn = $conn;
+    $this->server = new Server($conn);
   }
 
   public function doDeploy($app, $revision) {
@@ -34,50 +37,24 @@ class YouPloy {
 
     $this->setLock();
 
-    /* Everything should be fine */
-    $this->currTarget = $object->getTarget();
-    $this->revision = $object->getRevision();
+    /* Preparation */
 
-    if ($this->doRealDeploy($this->revision, $this->currTarget)) {
-      $object->setStatus(Ploy::STATUS_DEPLOYMENT_FAILURE);
+    if (!$this->prepare()) {
+      throw new \Exception("Failed in preparation step\n");
     }
 
+    /* Do deployment */
 
-  }
-
-  protected function doRealDeploy($revision, $target) {
-    // secure transfer to $target
-    // Check whether file $revision is in shared directory or not
-    // Check whether this revision has been deployed before
-    // Do preparation steps
-    if ($this->doTakeServerOutOfRotation($target)) {
-      $this->gracefulStop();
-      throw new \Exception("Failed to take %s out of rotation\n", $target);
+    if (!$this->deploy($app, $revision)) {
+      throw new \Exception("Failed in deployment step\n");
     }
 
-    if ($this->doPackageDeploy($target, $revision)) {
+    /* Get deployment feedback */
 
+    if (!$this->feedback($app, $revision)) {
+      throw new \Exception("Failed in feedback step\n");
     }
 
-    if ($this->doPostDeploymentCheck($target)) {
-    }
-    
-  }
-
-  protected function doPackageDeploy($target, $revision) {
-    /* Check if it's out of rotation */
-    if ($this->isOutOfRotation($target)) {
-      throw new \Exception("Server: %s is still serving production\n", $target);
-    }
-
-    /* SSH to $target */
-    // Location of deployment package: DONE by Jenkins
-    // Revision: $revision
-    // create directory: /// CONFIGURATION!!
-    // mkdir -p /var/www/appname#$revision
-    // unzip deployment package to /var/www/appname#$revision
-    // set RollbackTo $previousRevision
-    //
   }
 
   protected function gracefulStop() {
@@ -85,11 +62,28 @@ class YouPloy {
     // Destroy Ploy objects
   }
 
-  protected function doTakeServerOutOfRotation($target) {
-    // SSH to server and take it out of rotation
-    // take out from prodLoadBalancer, move it to testLoadBalancer
-    // Do Guzzle call to this testLoadBalancer, if gets 200
-    // return true
+  protected function prepare() {
+    return $this->server->prepare();
+  
+    $this->prepared = true;
+  }
+
+  protected function deploy($app, $revision) {
+    if ($this->prepared === false) {
+      throw new \Exception("Preparation step is not fulfilled\n");
+    }
+
+    return $this->server->deploy($app, $revision);
+
+    $this->deployed = true;
+  }
+
+  protected function feedback($app, $revision) {
+    if ($this->deployed === false) {
+      throw new \Exception("Deployment step is not fulfilled\n");
+    }
+
+    return $this->server->feedback($app, $revision);
   }
 
   protected function setLock() {

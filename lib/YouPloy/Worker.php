@@ -30,18 +30,20 @@ class Worker {
       echo "Connecting to ${server} \n";
       // Create new SSH Connection
       try {
-        $conn = new Connection($server);
+       // $conn = new Connection($server);
+
+        /* Testing only, later get from Config lah ...*/        
+        $conn = new Connection($server, 22, 'dwi','/home/vagrant/.ssh/id_rsa');
       } catch (Exception $e) {
         die($e->getMessages());
       }
 
       foreach($session['apps'] as $id => $app) {
         echo "Deploying #${id} ". $app['name'] . "#" . $app['revision'] . " @ ${server} \n";
-          break;
         // Now you're on your own
         // Send deploy command via SSH connection $conn
-        //$deploy = new YouPloy($conn);
-        //$deploy->doDeploy($app, $revision);
+        $deploy = new YouPloy($conn);
+        $deploy->doDeploy($app['name'], $app['revision']);
       }
     }
   }

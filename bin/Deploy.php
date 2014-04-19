@@ -39,7 +39,7 @@ $json = '{
       "id":"26eb335792a8511a68a599d752afa75b726f5454",
       "servers":
       [
-        "zeus",
+        "veritron",
         "hera",
         "hercules",
         "poseidon"
