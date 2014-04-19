@@ -12,6 +12,20 @@ class Worker {
       throw new WorkerException("servers are empty");
     }
 
+    /* Check connectivity here */
+    foreach($session['servers'] as $s) {
+      $target = $this->getServerInfo($s);
+      if (!is_array($target)) {
+        throw new \Exception("Malformated target server!\n");
+      }
+
+      $fp = fsockopen($target['host'], $target['port'], $errno, $errmsg, 10);
+      if (!$fp) {
+        throw new \Exception("Unable to connect to: ${target['host']}:${target['port']}, reason: $errmsg, error code: $errno\n");
+      }
+      fclose($fp);
+    }
+
     if (empty($session['apps'])) {
       throw new WorkerException("apps field empty");
     }
@@ -27,13 +41,16 @@ class Worker {
 
     /* Process deployment on each server */
     foreach($session['servers'] as $server) {
-      echo "Connecting to ${server} \n";
+      $target = $this->getServerInfo($server);
+      if (!is_array($target)) {
+        throw new \Exception("Malformated target server!\n");
+      }
+
+      echo "Connecting to ${target['host']} \n";
       // Create new SSH Connection
       try {
-       // $conn = new Connection($server);
-
         /* Testing only, later get from Config lah ...*/        
-        $conn = new Connection($server, 22, 'dwi','/home/vagrant/.ssh/id_rsa');
+        $conn = new Connection($target['host'], $target['port'], 'dwi','/home/vagrant/.ssh/id_rsa');
       } catch (Exception $e) {
         die($e->getMessages());
       }
@@ -49,4 +66,24 @@ class Worker {
   }
 
   protected function gracefulStop() {}
+
+  protected function getServerInfo($server) {
+    $arr = explode(':', $server);
+    if (empty($arr))
+      return false;
+
+    $host = $arr[0];
+    if (empty($host))
+      return false;
+
+    $port = isset($arr[1]) ? $arr[1] : 22;
+
+    $rv = array(
+      'host' => $host,
+      'port' => $port
+    );
+
+    return $rv;
+  }
+
 }
